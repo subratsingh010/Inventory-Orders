@@ -51,6 +51,26 @@ function NavButton({ active, children, icon: Icon, onClick }) {
   );
 }
 
+function FormField({ help, label, ...props }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input {...props} />
+      {help && <small>{help}</small>}
+    </label>
+  );
+}
+
+function SelectField({ children, help, label, ...props }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <select {...props}>{children}</select>
+      {help && <small>{help}</small>}
+    </label>
+  );
+}
+
 function App() {
   const [page, setPage] = useState("dashboard");
   const [user, setUser] = useState(savedUser);
@@ -212,6 +232,11 @@ function App() {
     });
   }
 
+  function cancelProductEdit() {
+    setEditingProductId(null);
+    setProductForm(emptyProduct);
+  }
+
   return (
     <>
       <nav className="navbar">
@@ -266,6 +291,7 @@ function App() {
             field={field}
             submitProduct={submitProduct}
             startEdit={startEdit}
+            cancelProductEdit={cancelProductEdit}
             remove={remove}
           />
         )}
@@ -381,7 +407,7 @@ function Dashboard({ summary, products, orders, lowStock, loading }) {
   );
 }
 
-function ProductsPage({ products, productForm, setProductForm, editingProductId, field, submitProduct, startEdit, remove }) {
+function ProductsPage({ products, productForm, setProductForm, editingProductId, field, submitProduct, startEdit, cancelProductEdit, remove }) {
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -389,11 +415,49 @@ function ProductsPage({ products, productForm, setProductForm, editingProductId,
         <PackagePlus size={18} />
       </div>
       <form className="form-grid" onSubmit={submitProduct}>
-        <input required placeholder="Product name" value={productForm.name} onChange={field(setProductForm, "name")} />
-        <input required placeholder="SKU/code" value={productForm.sku} onChange={field(setProductForm, "sku")} />
-        <input required min="0.01" step="0.01" type="number" placeholder="Price" value={productForm.price} onChange={field(setProductForm, "price")} />
-        <input required min="0" type="number" placeholder="Quantity" value={productForm.quantity_in_stock} onChange={field(setProductForm, "quantity_in_stock")} />
-        <button type="submit">{editingProductId ? "Update Product" : "Add Product"}</button>
+        <FormField
+          required
+          autoComplete="off"
+          help="Use the business-facing product name."
+          label="Product name"
+          placeholder="Steel storage bin"
+          value={productForm.name}
+          onChange={field(setProductForm, "name")}
+        />
+        <FormField
+          required
+          autoComplete="off"
+          help="Must be unique across all products."
+          label="SKU/code"
+          placeholder="BIN-001"
+          value={productForm.sku}
+          onChange={field(setProductForm, "sku")}
+        />
+        <FormField
+          required
+          help="Backend uses this price to calculate order totals."
+          label="Unit price"
+          min="0.01"
+          placeholder="29.99"
+          step="0.01"
+          type="number"
+          value={productForm.price}
+          onChange={field(setProductForm, "price")}
+        />
+        <FormField
+          required
+          help="Stock cannot be negative."
+          label="Quantity in stock"
+          min="0"
+          placeholder="100"
+          type="number"
+          value={productForm.quantity_in_stock}
+          onChange={field(setProductForm, "quantity_in_stock")}
+        />
+        <div className="form-actions">
+          {editingProductId && <button className="secondary-button" type="button" onClick={cancelProductEdit}>Cancel Edit</button>}
+          <button type="submit">{editingProductId ? "Update Product" : "Add Product"}</button>
+        </div>
       </form>
       <div className="table-wrap">
         <table>
@@ -428,10 +492,39 @@ function CustomersPage({ customers, customerForm, setCustomerForm, field, submit
         <Users size={18} />
       </div>
       <form className="form-grid" onSubmit={submitCustomer}>
-        <input required placeholder="Full name" value={customerForm.full_name} onChange={field(setCustomerForm, "full_name")} />
-        <input required type="email" placeholder="Email address" value={customerForm.email} onChange={field(setCustomerForm, "email")} />
-        <input required placeholder="Phone number" value={customerForm.phone_number} onChange={field(setCustomerForm, "phone_number")} />
-        <button type="submit">Add Customer</button>
+        <FormField
+          required
+          autoComplete="name"
+          help="Use the customer or account contact name."
+          label="Full name"
+          placeholder="Ava Smith"
+          value={customerForm.full_name}
+          onChange={field(setCustomerForm, "full_name")}
+        />
+        <FormField
+          required
+          autoComplete="email"
+          help="Email must be unique."
+          label="Email address"
+          placeholder="ava@example.com"
+          type="email"
+          value={customerForm.email}
+          onChange={field(setCustomerForm, "email")}
+        />
+        <FormField
+          required
+          autoComplete="tel"
+          help="Include country or area code when available."
+          label="Phone number"
+          pattern="[0-9+()\\-\\s]{3,40}"
+          placeholder="+1 555 0100"
+          value={customerForm.phone_number}
+          onChange={field(setCustomerForm, "phone_number")}
+        />
+        <div className="form-actions">
+          <button className="secondary-button" type="button" onClick={() => setCustomerForm(emptyCustomer)}>Clear</button>
+          <button type="submit">Add Customer</button>
+        </div>
       </form>
       <div className="list">
         {customers.length === 0 && <p className="empty">No customers yet.</p>}
@@ -447,6 +540,11 @@ function CustomersPage({ customers, customerForm, setCustomerForm, field, submit
 }
 
 function OrdersPage({ customers, products, orders, orderForm, setOrderForm, selectedOrder, setSelectedOrder, lowStock, loading, field, submitOrder, remove }) {
+  const selectedProduct = products.find((product) => product.id === Number(orderForm.product_id));
+  const requestedQuantity = Number(orderForm.quantity || 0);
+  const estimatedTotal = selectedProduct ? Number(selectedProduct.price) * requestedQuantity : 0;
+  const hasInsufficientStock = Boolean(selectedProduct && requestedQuantity > selectedProduct.quantity_in_stock);
+
   return (
     <section className="workspace orders">
       <div className="panel">
@@ -455,16 +553,45 @@ function OrdersPage({ customers, products, orders, orderForm, setOrderForm, sele
           <ClipboardList size={18} />
         </div>
         <form className="form-grid single" onSubmit={submitOrder}>
-          <select required value={orderForm.customer_id} onChange={field(setOrderForm, "customer_id")}>
+          <SelectField
+            required
+            help="The order will be attached to this customer."
+            label="Customer"
+            value={orderForm.customer_id}
+            onChange={field(setOrderForm, "customer_id")}
+          >
             <option value="">Select customer</option>
             {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.full_name}</option>)}
-          </select>
-          <select required value={orderForm.product_id} onChange={field(setOrderForm, "product_id")}>
+          </SelectField>
+          <SelectField
+            required
+            help="Only products with enough inventory can be ordered."
+            label="Product"
+            value={orderForm.product_id}
+            onChange={field(setOrderForm, "product_id")}
+          >
             <option value="">Select product</option>
             {products.map((product) => <option key={product.id} value={product.id}>{product.name} ({product.quantity_in_stock} available)</option>)}
-          </select>
-          <input required min="1" type="number" placeholder="Quantity ordered" value={orderForm.quantity} onChange={field(setOrderForm, "quantity")} />
-          <button type="submit">Create Order</button>
+          </SelectField>
+          <FormField
+            required
+            help={selectedProduct ? `${selectedProduct.quantity_in_stock} available in stock.` : "Select a product first."}
+            label="Quantity ordered"
+            min="1"
+            placeholder="1"
+            type="number"
+            value={orderForm.quantity}
+            onChange={field(setOrderForm, "quantity")}
+          />
+          <div className={hasInsufficientStock ? "order-preview error" : "order-preview"}>
+            <span>Estimated total</span>
+            <strong>{money(estimatedTotal)}</strong>
+            {hasInsufficientStock && <small>Requested quantity is higher than available inventory.</small>}
+          </div>
+          <div className="form-actions">
+            <button className="secondary-button" type="button" onClick={() => setOrderForm(emptyOrder)}>Clear</button>
+            <button disabled={hasInsufficientStock} type="submit">Create Order</button>
+          </div>
         </form>
         {lowStock.length > 0 && (
           <div className="notice">
@@ -519,11 +646,40 @@ function AuthPage({ mode, form, setForm, field, onSubmit, onSwitch }) {
         </div>
         <form className="form-grid single" onSubmit={onSubmit}>
           {isRegister && (
-            <input required placeholder="Full name" value={form.full_name} onChange={field(setForm, "full_name")} />
+            <FormField
+              required
+              autoComplete="name"
+              help="This name appears in the navigation bar."
+              label="Full name"
+              placeholder="Subrat Kumar"
+              value={form.full_name}
+              onChange={field(setForm, "full_name")}
+            />
           )}
-          <input required type="email" placeholder="Email address" value={form.email} onChange={field(setForm, "email")} />
-          <input required minLength="6" type="password" placeholder="Password" value={form.password} onChange={field(setForm, "password")} />
-          <button type="submit">{isRegister ? "Create Account" : "Login"}</button>
+          <FormField
+            required
+            autoComplete="email"
+            help="Use the email registered for this workspace."
+            label="Email address"
+            placeholder="you@example.com"
+            type="email"
+            value={form.email}
+            onChange={field(setForm, "email")}
+          />
+          <FormField
+            required
+            autoComplete={isRegister ? "new-password" : "current-password"}
+            help={isRegister ? "Use at least 6 characters." : "Enter your account password."}
+            label="Password"
+            minLength="6"
+            placeholder="Minimum 6 characters"
+            type="password"
+            value={form.password}
+            onChange={field(setForm, "password")}
+          />
+          <div className="form-actions">
+            <button type="submit">{isRegister ? "Create Account" : "Login"}</button>
+          </div>
         </form>
         <button className="link-button" type="button" onClick={onSwitch}>
           {isRegister ? "Already have an account? Login" : "Need an account? Register"}
