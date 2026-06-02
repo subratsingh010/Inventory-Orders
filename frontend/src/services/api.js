@@ -19,6 +19,10 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  auth: {
+    login: (payload) => request("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+    register: (payload) => request("/auth/register", { method: "POST", body: JSON.stringify(payload) }),
+  },
   dashboard: () => request("/dashboard"),
   products: {
     list: () => request("/products"),

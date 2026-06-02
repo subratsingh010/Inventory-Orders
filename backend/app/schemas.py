@@ -50,6 +50,26 @@ class CustomerRead(CustomerBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserRegister(BaseModel):
+    full_name: str = Field(min_length=1, max_length=140)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=80)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=80)
+
+
+class UserRead(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OrderItemCreate(BaseModel):
     product_id: int
     quantity: int = Field(gt=0)

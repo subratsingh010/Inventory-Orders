@@ -18,6 +18,8 @@ Production-ready full-stack assessment project with a React frontend, FastAPI ba
 - Automatic stock reduction when an order is created
 - Automatic stock restoration when an order is deleted
 - Backend-calculated order totals
+- User register/login endpoints with hashed passwords
+- Navbar user display with logout
 - Responsive dashboard with total products, customers, orders, and low-stock products
 - Clear API error responses and frontend success/error messages
 
@@ -47,6 +49,8 @@ Production-ready full-stack assessment project with a React frontend, FastAPI ba
 
 ### Utility
 
+- `POST /auth/register`
+- `POST /auth/login`
 - `GET /dashboard`
 - `GET /health`
 - FastAPI docs: `/docs`

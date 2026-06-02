@@ -32,6 +32,16 @@ class Customer(Base):
     orders: Mapped[list["Order"]] = relationship(back_populates="customer", cascade="all, delete-orphan")
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(140), nullable=False)
+    email: Mapped[str] = mapped_column(String(180), nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(160), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Order(Base):
     __tablename__ = "orders"
 

@@ -1,5 +1,9 @@
 from contextlib import asynccontextmanager
 from decimal import Decimal
+import hashlib
+import hmac
+import os
+from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +13,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
 from app.database import Base, engine, get_db
-from app.models import Customer, Order, OrderItem, Product
+from app.models import Customer, Order, OrderItem, Product, User
 from app.schemas import (
     CustomerCreate,
     CustomerRead,
@@ -20,6 +24,9 @@ from app.schemas import (
     ProductCreate,
     ProductRead,
     ProductUpdate,
+    UserLogin,
+    UserRead,
+    UserRegister,
 )
 
 
@@ -42,6 +49,18 @@ app.add_middleware(
 
 def not_found(entity: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{entity} not found")
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    salt = salt or os.urandom(16).hex()
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt), 120_000).hex()
+    return f"{salt}:{digest}"
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    salt, digest = stored_hash.split(":", 1)
+    candidate = hash_password(password, salt).split(":", 1)[1]
+    return hmac.compare_digest(candidate, digest)
 
 
 def to_order_read(order: Order) -> OrderRead:
@@ -70,6 +89,27 @@ def to_order_read(order: Order) -> OrderRead:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/auth/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register_user(payload: UserRegister, db: Session = Depends(get_db)) -> User:
+    user = User(full_name=payload.full_name, email=payload.email, password_hash=hash_password(payload.password))
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User email must be unique") from exc
+    db.refresh(user)
+    return user
+
+
+@app.post("/auth/login", response_model=UserRead)
+def login_user(payload: UserLogin, db: Session = Depends(get_db)) -> User:
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    return user
 
 
 @app.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
