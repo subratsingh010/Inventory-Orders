@@ -147,11 +147,3 @@ docker push your-dockerhub-user/inventory-backend:latest
 2. Set the root directory to `frontend`.
 3. Add `VITE_API_BASE_URL=https://your-backend.onrender.com`.
 4. Deploy.
-
-## Submission Checklist
-
-- GitHub repository link: `TODO`
-- Docker Hub backend image link: `TODO`
-- Live frontend deployment URL: `TODO`
-- Live backend API URL: `TODO`
-# Inventory-Orders
