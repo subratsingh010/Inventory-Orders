@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://inventory:inventory@localhost:5432/inventory_db"
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000,https://inventory-orders-phi.vercel.app/"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

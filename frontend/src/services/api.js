@@ -1,24 +1,26 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-function buildUrl(path) {
-  return new URL(path, API_BASE_URL.endsWith("/") ? API_BASE_URL : `${API_BASE_URL}/`).toString();
-}
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 async function request(path, options = {}) {
-  const response = await fetch(buildUrl(path), {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+  const hasBody = options.body !== undefined && options.body !== null;
+
+  const headers = {
+    ...(hasBody ? { "Content-Type": "application/json" } : {}),
+    ...(options.headers || {}),
+  };
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    headers,
   });
 
   if (response.status === 204) return null;
 
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
     throw new Error(data.detail || "Something went wrong");
   }
+
   return data;
 }
 
