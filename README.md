@@ -85,10 +85,11 @@ Backend:
 
 ```bash
 cd backend
-cp .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export DATABASE_URL=postgresql+psycopg://inventory:change-me@localhost:5432/inventory_db
+export CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 uvicorn app.main:app --reload
 ```
 
@@ -96,7 +97,7 @@ Frontend:
 
 ```bash
 cd frontend
-cp .env.example .env
+export VITE_API_BASE_URL=http://localhost:8000
 npm install
 npm run dev
 ```
@@ -104,8 +105,7 @@ npm run dev
 ## Environment Variables
 
 Use one root `.env` file when running the full stack with Docker Compose.
-
-Use `backend/.env` and `frontend/.env` only when running those services directly outside Docker.
+When running services directly outside Docker, set the same variables in your shell or create local uncommitted `.env` files manually.
 
 Backend:
 
