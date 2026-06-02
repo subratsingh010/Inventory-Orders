@@ -1,0 +1,20 @@
+.DS_Store
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
