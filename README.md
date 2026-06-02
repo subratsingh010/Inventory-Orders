@@ -57,7 +57,9 @@ Production-ready full-stack assessment project with a React frontend, FastAPI ba
 
 ## Local Development With Docker Compose
 
-1. Copy environment defaults:
+Docker Compose uses the root `.env` file for frontend, backend, and database settings.
+
+1. Copy the root environment defaults:
 
 ```bash
 cp .env.example .env
@@ -83,6 +85,7 @@ Backend:
 
 ```bash
 cd backend
+cp .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -93,11 +96,16 @@ Frontend:
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
 ## Environment Variables
+
+Use one root `.env` file when running the full stack with Docker Compose.
+
+Use `backend/.env` and `frontend/.env` only when running those services directly outside Docker.
 
 Backend:
 
