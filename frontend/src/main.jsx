@@ -20,7 +20,7 @@ const emptyProduct = { name: "", sku: "", price: "", quantity_in_stock: "" };
 const emptyCustomer = { full_name: "", email: "", phone_number: "" };
 const emptyOrder = { customer_id: "", product_id: "", quantity: "" };
 const emptyLogin = { email: "", password: "" };
-const emptyRegister = { full_name: "", email: "", password: "" };
+const emptyRegister = { full_name: "", email: "", password: "", confirm_password: "" };
 const savedUser = JSON.parse(localStorage.getItem("inventoryUser") || "null");
 
 function money(value) {
@@ -144,8 +144,13 @@ function App() {
 
   async function submitRegister(event) {
     event.preventDefault();
+    if (registerForm.password !== registerForm.confirm_password) {
+      setMessage({ type: "error", text: "Passwords do not match." });
+      return;
+    }
     try {
-      const nextUser = await api.auth.register(registerForm);
+      const { confirm_password: _confirmPassword, ...payload } = registerForm;
+      const nextUser = await api.auth.register(payload);
       storeUser(nextUser);
       setRegisterForm(emptyRegister);
       setMessage({ type: "success", text: "Registration successful." });
@@ -677,6 +682,19 @@ function AuthPage({ mode, form, setForm, field, onSubmit, onSwitch }) {
             value={form.password}
             onChange={field(setForm, "password")}
           />
+          {isRegister && (
+            <FormField
+              required
+              autoComplete="new-password"
+              help="Re-enter the same password to confirm."
+              label="Confirm password"
+              minLength="6"
+              placeholder="Repeat password"
+              type="password"
+              value={form.confirm_password}
+              onChange={field(setForm, "confirm_password")}
+            />
+          )}
           <div className="form-actions">
             <button type="submit">{isRegister ? "Create Account" : "Login"}</button>
           </div>
